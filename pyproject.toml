@@ -1,0 +1,19 @@
+[project]
+name = "deduplicator-fastapi"
+version = "0.1.0"
+description = "Deduplication service for product events"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.12",
+    "fastapi-cli>=0.0.7",
+    "pydantic-settings>=2.8.1",
+    "redis>=5.2.1",
+]
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "locust>=2.34.1",
+    "pytest>=8.3.5",
+]
