@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+    container_name: ${APP_NAME}
+    env_file:
+      - ".env"
+    volumes:
+      - ./src:/app_workdir/src
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 2G
+    ports:
+      - "${APP_HOST}:${APP_PORT}:${APP_PORT}"
+
+  redis:
+    image: redis:7.4.2-alpine
+    command: redis-server --maxmemory 1gb --maxmemory-policy allkeys-lru
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+
+  locust:
+    image: locustio/locust
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./locust:/mnt/locust
+    command: -f /mnt/locust/locustfile.py --host=http://app:8000
