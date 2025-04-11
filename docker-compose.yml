@@ -1,4 +1,5 @@
 services:
+
   app:
     build:
       context: .
@@ -7,6 +8,47 @@ services:
     env_file:
       - ".env"
     volumes:
-      - ./src:./app_workdir/src
+      - ./src:/app_workdir/src
     ports:
       - "${APP_HOST}:${APP_PORT}:${APP_PORT}"
+    depends_on:
+      - redis
+    tty: true
+  
+  redis:
+    image: redis:7.4.2-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    volumes:
+      - "redis_data:/data"
+
+  celery:
+    build:
+      context: ./celery_worker
+      dockerfile: Dockerfile.celery
+    container_name: celery
+    command: celery -A celery_app worker --loglevel=info
+    env_file:
+      - ".env"
+    depends_on:
+      - redis
+      - app
+    tty: true
+
+  flower:
+    build:
+      context: ./celery_worker
+      dockerfile: Dockerfile.celery
+    container_name: flower
+    command: celery -A celery_app flower --port=${FLOWER_PORT}
+    env_file:
+      - ".env"
+    ports:
+      - "${FLOWER_PORT}:${FLOWER_PORT}"
+    depends_on:
+      - celery
+
+volumes:
+  redis_data:

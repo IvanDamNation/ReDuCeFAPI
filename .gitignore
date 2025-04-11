@@ -8,6 +8,8 @@ venv/
 .venv/
 .uv/
 
+celery_worker/
+
 docker-compose.override.yml
 
 .vscode/
