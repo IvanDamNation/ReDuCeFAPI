@@ -1,15 +1,24 @@
-from redis import asyncio as aioredis
+from redis import Redis, asyncio as aioredis
 
 from src.config import RedisConfig
 
-hash_blocklist = aioredis.StrictRedis(
-    host=RedisConfig.REDIS_HOST, port=RedisConfig.REDIS_PORT, db=0
-)
+
+class RedisManager:
+    def __init__(self):
+        self.pool = None
+
+    async def init_pool(self):
+        self.pool = aioredis.StrictRedis(
+            host=RedisConfig.REDIS_HOST,
+            port=RedisConfig.REDIS_PORT,
+            db=0,
+            decode_responses=True,
+        )
+
+    async def get_connection(self) -> Redis:
+        if not self.pool:
+            await self.init_pool()
+        return self.pool
 
 
-async def add_hash():
-    pass
-
-
-async def is_blocked():
-    pass
+redis_manager = RedisManager()
