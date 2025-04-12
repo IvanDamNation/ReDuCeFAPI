@@ -16,15 +16,29 @@ class AppDomainSettings(BaseSettings):
 
 
 class RedisSettings(BaseSettings):
-    REDIS_HOST: str
-    REDIS_PORT: str
+    REDIS_DDUP_HOST: str
+    REDIS_DDUP_PORT: str
+    REDIS_QUEUE_HOST: str
+    REDIS_QUEUE_PORT: str
     EVENT_TTL: int
 
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore",
     )
+    
+
+class CelerySettings(BaseSettings):
+    CELERY_BROKER: str
+    CELERY_BACKEND: str
+    CELERY_DDUP_DB: str
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore"
+    )
 
 
 AppDomainConfig = AppDomainSettings()
+CeleryConfig = CelerySettings()
 RedisConfig = RedisSettings()

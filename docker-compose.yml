@@ -12,18 +12,35 @@ services:
     ports:
       - "${APP_HOST}:${APP_PORT}:${APP_PORT}"
     depends_on:
-      redis:
+      redis-ddup:
+        condition: service_healthy
+      redis-queue:
         condition: service_healthy
     tty: true
   
-  redis:
+  redis-ddup:
     image: redis:7.4.2-alpine
-    container_name: redis
+    container_name: redis-ddup
     restart: always
     ports:
-      - "${REDIS_PORT}:${REDIS_PORT}"
+      - "${REDIS_DDUP_PORT}:6379"
     volumes:
-      - "redis_data:/data"
+      - "redis_data_ddup:/data"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  redis-queue:
+    image: redis:7.4.2-alpine
+    container_name: redis-queue
+    restart: always
+    ports:
+      - "${REDIS_QUEUE_PORT}:6379"
+    volumes:
+      - "redis_data_ddup:/data"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 1s
@@ -33,29 +50,34 @@ services:
 
   celery:
     build:
-      context: ./celery_worker
+      context: .
       dockerfile: Dockerfile.celery
     container_name: celery
-    command: celery -A celery_app worker --loglevel=info
+    command: worker --loglevel=info -Q ddup_queue
     env_file:
       - ".env"
     depends_on:
-      - redis
-      - app
+      redis-ddup:
+        condition: service_healthy
+      redis-queue:
+        condition: service_healthy
+      app:
+        condition: service_started
     tty: true
 
   flower:
     build:
-      context: ./celery_worker
+      context: .
       dockerfile: Dockerfile.celery
     container_name: flower
-    command: celery -A celery_app flower --port=${FLOWER_PORT}
+    command: --broker=redis://redis-queue:6379/0 flower --port=5555
     env_file:
       - ".env"
     ports:
-      - "${FLOWER_PORT}:${FLOWER_PORT}"
+      - "${FLOWER_PORT}:5555"
     depends_on:
       - celery
 
 volumes:
-  redis_data:
+  redis_data_ddup:
+  redis_data_queue:

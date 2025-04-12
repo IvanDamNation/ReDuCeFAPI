@@ -9,8 +9,8 @@ class RedisManager:
 
     async def init_pool(self):
         self.pool = aioredis.StrictRedis(
-            host=RedisConfig.REDIS_HOST,
-            port=RedisConfig.REDIS_PORT,
+            host=RedisConfig.REDIS_DDUP_HOST,
+            port=RedisConfig.REDIS_DDUP_PORT,
             db=0,
             decode_responses=True,
         )
