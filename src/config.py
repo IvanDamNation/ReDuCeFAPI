@@ -26,17 +26,14 @@ class RedisSettings(BaseSettings):
         env_file=".env",
         extra="ignore",
     )
-    
+
 
 class CelerySettings(BaseSettings):
     CELERY_BROKER: str
     CELERY_BACKEND: str
     CELERY_DDUP_DB: str
-    
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        extra="ignore"
-    )
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
 AppDomainConfig = AppDomainSettings()

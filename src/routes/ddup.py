@@ -5,6 +5,8 @@ from src.dependencies.redis import get_ddup_service
 from src.schemas.event import EventSchema
 from src.service.ddup import DeduplicationService
 
+from src.worker.app import app
+
 ddup_router = APIRouter()
 
 
@@ -22,7 +24,9 @@ async def process_event(
             status_code=status.HTTP_409_CONFLICT,
             detail="Duplicate event detected",
         )
-    await service.register_event(event)
+
+    app.send_task("process_event", args=[event.model_dump()])
+
     return JSONResponse(
-        content={"message": "processed"}, status_code=status.HTTP_200_OK
+        content={"message": "accepted"}, status_code=status.HTTP_202_ACCEPTED
     )

@@ -1,7 +1,6 @@
 import hashlib
 import json
 
-from celery import current_app
 from redis.asyncio import Redis
 
 from src.schemas.event import EventSchema
@@ -11,6 +10,7 @@ from src.config import RedisConfig
 class DeduplicationService:
     def __init__(self, redis: Redis):
         self.redis = redis
+        self.ttl = RedisConfig.EVENT_TTL
 
     async def _event_keygen(self, event: EventSchema) -> str:
         sorted_json = json.dumps(event.model_dump(), sort_keys=True)
@@ -21,10 +21,9 @@ class DeduplicationService:
         return await self.redis.exists(key)
 
     async def register_event(self, event: EventSchema) -> None:
-        if not await self.is_duplicate(event):
-            key = await self._event_keygen(event)
-            await self.redis.setex(
-                name=key,
-                time=RedisConfig.EVENT_TTL,
-                value="1",
+        key = await self._event_keygen(event)
+        async with self.redis.pipeline() as pipe:
+            exists, _ = await (
+                pipe.exists(key).setex(name=key, time=self.ttl, value=1).execute()
             )
+        return bool(exists)
