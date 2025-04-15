@@ -1,31 +1,109 @@
 services:
+
   app:
     build:
       context: .
       dockerfile: Dockerfile.fastapi
     container_name: ${APP_NAME}
     env_file:
-      - ".env"
+      - ".env.test"
     volumes:
       - ./src:/app_workdir/src
+    ports:
+      - "${APP_HOST}:${APP_PORT}:${APP_PORT}"
+    depends_on:
+      redis-ddup:
+        condition: service_healthy
+      redis-queue:
+        condition: service_healthy
+  
+  redis-ddup:
+    image: redis:7.4.2-alpine
+    container_name: redis-ddup
+    command: 
+      - redis-server 
+      - --maxmemory 2gb 
+      - --maxmemory-policy volatile-lfu 
+      - --save "" 
+      - --appendonly no 
+      - --activerehashing yes 
+      - --lazyfree-lazy-eviction yes
+    ports:
+      - "${REDIS_DDUP_PORT}:6379"
     deploy:
       resources:
         limits:
-          cpus: '4'
-          memory: 2G
-    ports:
-      - "${APP_HOST}:${APP_PORT}:${APP_PORT}"
+          cpus: '2'
+          memory: 3G
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
 
-  redis:
+  redis-queue:
     image: redis:7.4.2-alpine
-    command: redis-server --maxmemory 1gb --maxmemory-policy allkeys-lru
+    container_name: redis-queue
+    command: 
+      - redis-server 
+      - --maxmemory 2gb 
+      - --maxmemory-policy volatile-lfu 
+      - --save "" 
+      - --appendonly no 
+      - --activerehashing yes 
+      - --lazyfree-lazy-eviction yes
     ports:
-      - "${REDIS_PORT}:${REDIS_PORT}"
+      - "${REDIS_QUEUE_PORT}:6379"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 3G
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    command: 
+      - worker 
+      - --loglevel=info 
+      - --concurrency=1000
+      - --prefetch-multiplier=0
+      - --optimization=fair
+    env_file:
+      - ".env.test"
+    deploy:
+      replicas: 4
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1G
+    depends_on:
+      redis-ddup:
+        condition: service_healthy
+      redis-queue:
+        condition: service_healthy
+      app:
+        condition: service_started
 
   locust:
-    image: locustio/locust
+    image: locustio/locust:2.34.1
+    container_name: locust
+    env_file:
+      - ".env.test"
     ports:
       - "8089:8089"
     volumes:
       - ./locust:/mnt/locust
     command: -f /mnt/locust/locustfile.py --host=http://app:8000
+
+# volumes:
+#   redis_data_ddup_test:
+#   redis_data_queue_test:

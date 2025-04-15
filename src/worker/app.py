@@ -17,7 +17,6 @@ app.conf.update(
     worker_send_task_events=True,
     task_send_sent_event=True,
     event_queue_expires=60,
-    worker_prefetch_multiplier=1,
     worker_pool="solo",
     task_serializer="json",
     result_serializer="json",

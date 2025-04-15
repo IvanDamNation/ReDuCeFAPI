@@ -5,7 +5,6 @@ description = "Deduplication service for product events"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "asgiref>=3.8.1",
     "celery>=5.5.1",
     "fastapi>=0.115.12",
     "fastapi-cli>=0.0.7",
