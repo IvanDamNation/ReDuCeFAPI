@@ -20,10 +20,12 @@ services:
   
   redis-ddup:
     image: redis:7.4.2-alpine
-    container_name: redis-ddup
+    container_name: ${REDIS_DDUP_HOST}
     restart: always
+    env_file:
+      - ".env"
     ports:
-      - "${REDIS_DDUP_PORT}:6379"
+      - "6379:${REDIS_PORT}"
     volumes:
       - "redis_data_ddup:/data"
     healthcheck:
@@ -35,10 +37,12 @@ services:
 
   redis-queue:
     image: redis:7.4.2-alpine
-    container_name: redis-queue
+    container_name: ${REDIS_QUEUE_HOST}
     restart: always
+    env_file:
+      - ".env"
     ports:
-      - "${REDIS_QUEUE_PORT}:6379"
+      - "6380:${REDIS_PORT}"
     volumes:
       - "redis_data_ddup:/data"
     healthcheck:
@@ -52,8 +56,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.celery
-    container_name: celery
-    command: worker --loglevel=info -Q ddup_queue -E
+    command: worker --loglevel=info -Q ddup_queue
     env_file:
       - ".env"
     depends_on:
@@ -70,11 +73,11 @@ services:
       context: .
       dockerfile: Dockerfile.celery
     container_name: flower
-    command: --broker=redis://redis-queue:6379/0 flower --port=5555
+    command: --broker=redis://${REDIS_QUEUE_HOST}:${REDIS_PORT}/0 flower --port=${FLOWER_PORT}
     env_file:
       - ".env"
     ports:
-      - "${FLOWER_PORT}:5555"
+      - "${FLOWER_PORT}:${FLOWER_PORT}"
     depends_on:
       redis-queue:
         condition: service_healthy

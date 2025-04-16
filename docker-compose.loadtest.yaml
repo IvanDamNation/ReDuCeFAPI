@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile.fastapi
     container_name: ${APP_NAME}
     env_file:
-      - ".env.test"
+      - ".env"
     volumes:
       - ./src:/app_workdir/src
     ports:
@@ -19,7 +19,7 @@ services:
   
   redis-ddup:
     image: redis:7.4.2-alpine
-    container_name: redis-ddup
+    container_name: ${REDIS_DDUP_HOST}
     command: 
       - redis-server 
       - --maxmemory 2gb 
@@ -28,8 +28,10 @@ services:
       - --appendonly no 
       - --activerehashing yes 
       - --lazyfree-lazy-eviction yes
+    env_file:
+      - ".env"
     ports:
-      - "${REDIS_DDUP_PORT}:6379"
+      - "6379:${REDIS_PORT}"
     deploy:
       resources:
         limits:
@@ -44,7 +46,7 @@ services:
 
   redis-queue:
     image: redis:7.4.2-alpine
-    container_name: redis-queue
+    container_name: ${REDIS_QUEUE_HOST}
     command: 
       - redis-server 
       - --maxmemory 2gb 
@@ -53,8 +55,10 @@ services:
       - --appendonly no 
       - --activerehashing yes 
       - --lazyfree-lazy-eviction yes
+    env_file:
+      - ".env"
     ports:
-      - "${REDIS_QUEUE_PORT}:6379"
+      - "6380:${REDIS_PORT}"
     deploy:
       resources:
         limits:
@@ -78,7 +82,7 @@ services:
       - --prefetch-multiplier=0
       - --optimization=fair
     env_file:
-      - ".env.test"
+      - ".env"
     deploy:
       replicas: 4
       resources:
@@ -95,15 +99,16 @@ services:
 
   locust:
     image: locustio/locust:2.34.1
-    container_name: locust
+    container_name: ${TESTAPP_HOST}
     env_file:
-      - ".env.test"
+      - ".env"
     ports:
-      - "8089:8089"
+      - "${TESTAPP_PORT}:${TESTAPP_PORT}"
     volumes:
       - ./locust:/mnt/locust
-    command: -f /mnt/locust/locustfile.py --host=http://app:8000
+    command: -f /mnt/locust/locustfile.py --host=http://${APP_NAME}:${APP_PORT}
 
+# Uncomment to keep data after restart
 # volumes:
 #   redis_data_ddup_test:
 #   redis_data_queue_test:
