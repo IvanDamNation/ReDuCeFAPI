@@ -1,0 +1,103 @@
+{
+	"info": {
+		"_postman_id": "717b2fd7-cefe-40bd-99b5-0ca1c9124628",
+		"name": "Deduplicator",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "26801519"
+	},
+	"item": [
+		{
+			"name": "test",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8000/api/v1/ddup_service/test",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"v1",
+						"ddup_service",
+						"test"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "event1",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"user_id\": \"user_12345\",\r\n    \"event_type\": \"purchase\",\r\n    \"timestamp\": \"2024-03-15T14:30:00Z\",\r\n    \"payload\": {\r\n        \"product_id\": \"prod_678\",\r\n        \"amount\": 99.99,\r\n        \"currency\": \"USD\"\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8000/api/v1/ddup_service/events",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"v1",
+						"ddup_service",
+						"events"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "event2",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"user_id\": \"user_98765\",\r\n    \"event_type\": \"product_view\",\r\n    \"timestamp\": \"2024-03-15T14:35:12.345Z\",\r\n    \"payload\": {\r\n        \"product_id\": \"prod_911\",\r\n        \"duration_sec\": 45,\r\n        \"category\": \"electronics\"\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8000/api/v1/ddup_service/events",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"v1",
+						"ddup_service",
+						"events"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
