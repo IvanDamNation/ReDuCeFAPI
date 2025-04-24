@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 
@@ -28,5 +29,10 @@ async def process_event(
     app.send_task("process_event", args=[event.model_dump()])
 
     return JSONResponse(
-        content={"message": "accepted"}, status_code=status.HTTP_202_ACCEPTED
+        content={
+            "status": "processed",
+            "event": event.model_dump(),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        },
+        status_code=status.HTTP_202_ACCEPTED
     )
