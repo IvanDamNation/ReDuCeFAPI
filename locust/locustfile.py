@@ -46,7 +46,8 @@ class EventUser(FastHttpUser):
         }
 
     def send_request(self, event, is_duplicate):
-
+        expected_status = "duplicate" if is_duplicate else "processed"
+        
         with self.client.post(
             "/api/v1/ddup_service/events",
             json=event,
@@ -56,16 +57,42 @@ class EventUser(FastHttpUser):
             self.handle_response(response, event, is_duplicate)
 
     def handle_response(self, response, event, is_duplicate):
-        expected_status = 409 if is_duplicate else 202
+        expected_status = "duplicate" if is_duplicate else "processed"
+        
+        try:
+            if not response.content:
+                response.failure("Empty response body")
+                return
 
-        if response.status_code == expected_status:
-            response.success()
-            if is_duplicate:
-                self.duplicates_sent += 1
+            try:
+                response_data = response.json()
+            except json.JSONDecodeError:
+                response.failure(f"Invalid JSON: {response.text[:100]}")
+                return
+
+            if "status" not in response_data:
+                response.failure("Missing 'status' field")
+                return
+
+            actual_status = str(response_data["status"]).lower()
+
+            if actual_status == expected_status:
+                response.success()
+                self._update_stats(is_duplicate)
+            elif actual_status == "processed":
+                response.failure("False positive processing")
             else:
-                self.uniques_sent += 1
+                response.failure(f"Unexpected status: {actual_status}")
+
+        except Exception as e:
+            response.failure(f"Unhandled error: {str(e)}")
+            logging.error(f"Error processing response: {e}\n{response.text}")
+
+    def _update_stats(self, is_duplicate):
+        if is_duplicate:
+            self.duplicates_sent += 1
         else:
-            self.log_error(response, event)
+            self.uniques_sent += 1
 
     def log_error(self, response, event):
         error_info = {

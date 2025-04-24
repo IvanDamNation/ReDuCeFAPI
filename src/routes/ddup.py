@@ -21,10 +21,14 @@ async def process_event(
     event: EventSchema, service: DeduplicationService = Depends(get_ddup_service)
 ):
     if await service.is_duplicate(event):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Duplicate event detected",
-        )
+        return JSONResponse(
+        content={
+            "status": "duplicate",
+            "event": event.model_dump(),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        },
+        status_code=status.HTTP_200_OK
+    )
 
     app.send_task("process_event", args=[event.model_dump()])
 
@@ -34,5 +38,5 @@ async def process_event(
             "event": event.model_dump(),
             "timestamp": datetime.now(timezone.utc).isoformat()
         },
-        status_code=status.HTTP_202_ACCEPTED
+        status_code=status.HTTP_200_OK
     )
