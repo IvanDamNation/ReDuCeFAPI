@@ -4,12 +4,70 @@
 
 Real-time event processing system with Redis-backed deduplication and Celery task queue.
 
+## Architectural Principles
+
+### Core Concept
+`GET` requests are significantly cheaper than write operations. To optimize performance:
+- FastAPI handles lightweight hash generation and cache checks
+- Heavy write operations delegated to Celery workers
+- Immediate response to client without waiting for DB persistence
+
+**Why this approach?**
+```bash
++------------------------+----------------------+
+|        Operation       | Relative Cost (CPU)  |
++------------------------+----------------------+
+| SHA-256 Hash Generation|         1x           |
+| Redis GET              |         2x           |
+| Redis SETEX            |         5x           |
+| Network Task Transfer  |         3x           |
++------------------------+----------------------+
+```
+
+### Deduplication Logic
+```mermaid
+sequenceDiagram
+Client->>API: POST /events (JSON)
+API->>Redis: EXISTS <hash>
+alt Duplicate Found
+  Redis-->>API: True
+  API-->>Client: 409 Conflict
+else New Event
+  API->>Celery: Task Queue
+  API-->>Client: 202 Accepted
+  Celery->>Redis: SETEX <hash>
+end
+```
+
 ## Features
 - 7-day deduplication window
 - Horizontal scaling with Celery workers
 - Two operation modes: Dev & Load Test
 - Built-in Postman collection (`Deduplicator.postman_collection.json`)
 - Redis cluster support
+
+## System Architecture
+                      +----------------+
+                      |  Client        |
+                      +--------+-------+
+                               |
+                      +--------v-------+
+                      |  FastAPI       |
+                      | (Validation &  |
+                      |  Hash Check)   |
+                      +--------+-------+
+                               |
+                +--------------+--------------+
+                |                             |
+        +-------v--------+          +---------v---------+
+        | Redis (Cache)  |          | Redis (Queue)     |
+        | GET/EXISTS     |          | Celery Tasks      |
+        +----------------+          +---------+---------+
+                                              |
+                                    +---------v---------+
+                                    | Celery Workers    |
+                                    | (SETEX with TTL)  |
+                                    +-------------------+
 
 ## Prerequisites
 - Docker 20.10+
